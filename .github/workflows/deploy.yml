@@ -12,8 +12,8 @@ jobs:
       -
         name: Submit pending deployment notification
         run: |
-          export TITLE="Pending NekoPlayer-resources Production Deployment: $GITHUB_REF_NAME"
-          export URL="https://github.com/BoomboxRapsody/NekoPlayer-resources/actions/runs/$GITHUB_RUN_ID"
+          export TITLE="Pending AXPlayer-resources Production Deployment: $GITHUB_REF_NAME"
+          export URL="https://github.com/ZeroMayo/AXPlayer-resources/actions/runs/$GITHUB_RUN_ID"
           export DESCRIPTION="Awaiting approval for building NuGet packages for tag $GITHUB_REF_NAME:
           [View Workflow Run]($URL)"
           export ACTOR_ICON="https://avatars.githubusercontent.com/u/$GITHUB_ACTOR_ID"
@@ -42,6 +42,8 @@ jobs:
     name: Pack
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      id-token: write  # enable GitHub OIDC token issuance for this job
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,18 +52,24 @@ jobs:
         id: artifactsPath
         run: echo "::set-output name=nuget_artifacts::${{github.workspace}}/artifacts"
 
-      - name: Install .NET 8.0.x
+      - name: Install .NET 10.0.x
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
+          
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
 
       - name: Pack
-        run: dotnet pack -c Release NekoPlayer.App.Resources /p:Version=${{ github.ref_name }} /p:GenerateDocumentationFile=true /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg -o ${{steps.artifactsPath.outputs.nuget_artifacts}}
+        run: dotnet pack -c Release AXPlayer.App.Resources /p:Version=${{ github.ref_name }} /p:GenerateDocumentationFile=true /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg -o ${{steps.artifactsPath.outputs.nuget_artifacts}}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NekoPlayer-resources
+          name: AXPlayer-resources
           path: |
             ${{steps.artifactsPath.outputs.nuget_artifacts}}/*.nupkg
             ${{steps.artifactsPath.outputs.nuget_artifacts}}/*.snupkg
